@@ -11,7 +11,7 @@ Thanks to https://github.com/mzeryck
 // 彩云天气API（https://caiyunapp.com自行申请）
 const apiKey = ""
 // 语言选项：日语ja，中文zh_CN，英文en，留空则跟随iOS系统设置
-let lang = "ja"
+let lang = "zh_CN"
 if (lang == "" || lang == null) { lang = Device.locale() }
 // 是否使用动态定位
 const autoLocation = true
@@ -27,7 +27,7 @@ const padding = 10
 const useiCloud = true
 // 缓存文件存储位置
 const files = useiCloud ? FileManager.iCloud() : FileManager.locale()
-// 为缓存文件建立二级文件夹（仅适用于iCloud，请手动在iCloud Drive的Scriptable文件夹中手动建立二级文件夹）
+// 为缓存文件建立二级文件夹（仅适用于iCloud，请手动在iCloud Drive的Scriptable文件夹中手动建立Cache文件夹）
 const folder = useiCloud ? "/Cache" : ""
 // 天气设置项
 const weatherSettings = {
@@ -557,7 +557,7 @@ async function setupLocation() {
       // 区
       locationData.subLocality = geo.subLocality
       // 街道
-      locationData.street = geo.thoroughfare
+      locationData.street = (geo.thoroughfare==null) ? "" : geo.thoroughfare
       // 详细地址
       locationData.address = locationData.locality + " " + locationData.subLocality + " " + locationData.street
       files.writeString(locationPath, location.latitude + "|" + location.longitude + "|" + locationData.address)
