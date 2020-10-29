@@ -557,7 +557,7 @@ async function setupLocation() {
       // 区
       locationData.subLocality = geo.subLocality
       // 街道
-      locationData.street = (geo.thoroughfare == "null") ? "" : geo.thoroughfare
+      locationData.street = geo.thoroughfare
       // 详细地址
       locationData.address = locationData.locality + " " + locationData.subLocality + " " + locationData.street
       files.writeString(locationPath, location.latitude + "|" + location.longitude + "|" + locationData.address)
