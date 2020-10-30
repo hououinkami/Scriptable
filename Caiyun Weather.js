@@ -901,7 +901,6 @@ function mapWind(speed, direction) {
   // 风力
   if (speed < 1) {
     description = `0${localizedText.kyu}`;
-    return description;
   } else if (speed <= 5) {
     description = `1${localizedText.kyu}`;
   } else if (speed <= 11) {
