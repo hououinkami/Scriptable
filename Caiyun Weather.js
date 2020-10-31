@@ -26,7 +26,7 @@ const padding = 10
 // 是否使用iCloud存储缓存
 const useiCloud = true
 // 缓存文件存储位置
-const files = useiCloud ? FileManager.iCloud() : FileManager.locale()
+const files = useiCloud ? FileManager.iCloud() : FileManager.local()
 // 为缓存文件建立二级文件夹（仅适用于iCloud，请手动在iCloud Drive的Scriptable文件夹中手动建立Cache文件夹）
 const folder = useiCloud ? "/Cache" : ""
 // 天气设置项
