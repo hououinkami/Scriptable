@@ -11,7 +11,7 @@ Thanks to https://github.com/mzeryck
 // 彩云天气API（https://caiyunapp.com自行申请）
 const apiKey = ""
 // 语言选项：日语ja，中文zh_CN，英文en，留空则跟随iOS系统设置
-let lang = "ja"
+let lang = "zh_CN"
 if (lang == "" || lang == null) { lang = Device.locale() }
 // 是否使用动态定位
 const autoLocation = true
