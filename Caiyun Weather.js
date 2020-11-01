@@ -4,14 +4,14 @@
 Thanks to https://github.com/mzeryck
 */
 
-/*
+/**
 自定义配置
 */
 
 // 彩云天气API（https://caiyunapp.com自行申请）
 const apiKey = ""
 // 语言选项：日语ja，中文zh_CN，英文en，留空则跟随iOS系统设置
-let lang = "zh_CN"
+let lang = "ja"
 if (lang == "" || lang == null) { lang = Device.locale() }
 // 是否使用动态定位
 const autoLocation = true
@@ -176,25 +176,6 @@ const textFormat = {
   infoLabel:    { size: 9, color: "", font: "" },
   // 值
   infoNum:    { size: 15, color: "", font: "" },
-
-
-
-  smallDate:   { size: 17, color: "", font: "semibold" },
-  largeDate1:  { size: 30, color: "", font: "light" },
-  largeDate2:  { size: 30, color: "", font: "light" },
-  greeting:    { size: 18, color: "", font: "semibold" },
-  eventLabel:  { size: 14, color: "", font: "semibold" },
-  eventTitle:  { size: 14, color: "", font: "semibold" },
-  eventTime:   { size: 14, color: "ffffffcc", font: "" },
-  noEvents:    { size: 30, color: "", font: "semibold" },
-  largeTemp:   { size: 34, color: "", font: "light" },
-  
-  
-  customText:  { size: 14, color: "", font: "" },
-  battery:    { size: 18, color: "", font: "medium" },
-  mediumTemp:   { size: 15, color: "", font: "" },
-  tinyName:    { size: 9, color: "", font: "" },
-  mediumName:   { size: 14, color: "", font: "" },
 }
 
 /*
@@ -557,7 +538,7 @@ async function setupLocation() {
       // 区
       locationData.subLocality = geo.subLocality
       // 街道
-      locationData.street = geo.thoroughfare
+      locationData.street = (geo.thoroughfare == "null") ? "" : geo.thoroughfare
       // 详细地址
       locationData.address = locationData.locality + " " + locationData.subLocality + " " + locationData.street
       files.writeString(locationPath, location.latitude + "|" + location.longitude + "|" + locationData.address)
@@ -1271,6 +1252,16 @@ function cropImage(img,rect) {
 // 识别iPhone尺寸
 function phoneSizes() {
   let phones = {  
+  "2532": {
+      "小号": 474,
+      "中号": 1014,
+      "大号": 1062,
+      "左边": 78,
+      "右边": 618,
+      "顶部": 231,
+      "中间": 819,
+      "底部": 1407
+  },
   "2688": {
       "小号":  507,
       "中号":  1080,
