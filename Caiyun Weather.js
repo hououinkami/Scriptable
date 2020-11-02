@@ -538,7 +538,7 @@ async function setupLocation() {
       // 区
       locationData.subLocality = geo.subLocality
       // 街道
-      locationData.street = (geo.thoroughfare == "null") ? "" : geo.thoroughfare
+      locationData.street = geo.thoroughfare
       // 详细地址
       locationData.address = locationData.locality + " " + locationData.subLocality + " " + locationData.street
       files.writeString(locationPath, location.latitude + "|" + location.longitude + "|" + locationData.address)
@@ -1252,6 +1252,7 @@ function cropImage(img,rect) {
 // 识别iPhone尺寸
 function phoneSizes() {
   let phones = {  
+  // 12 and 12 Pro
   "2532": {
       "小号": 474,
       "中号": 1014,
@@ -1262,6 +1263,7 @@ function phoneSizes() {
       "中间": 819,
       "底部": 1407
   },
+  // 11 Pro Max, XS Max
   "2688": {
       "小号":  507,
       "中号":  1080,
@@ -1272,7 +1274,7 @@ function phoneSizes() {
       "中间":  858,
       "底部":  1488
   },
-  
+  // 11, XR
   "1792": {
       "小号":  338,
       "中号":  720,
@@ -1283,7 +1285,7 @@ function phoneSizes() {
       "中间":  580,
       "底部":  1000
   },
-  
+  // 11 Pro, XS, X
   "2436": {
       "小号":  465,
       "中号":  987,
@@ -1294,7 +1296,7 @@ function phoneSizes() {
       "中间":  783,
       "底部":  1353
   },
-  
+  // Plus phones
   "2208": {
       "小号":  471,
       "中号":  1044,
@@ -1305,7 +1307,7 @@ function phoneSizes() {
       "中间":  696,
       "底部":  1278
   },
-  
+  // SE2 and 6/6S/7/8
   "1334": {
       "小号":  296,
       "中号":  642,
@@ -1316,7 +1318,7 @@ function phoneSizes() {
       "中间":  412,
       "底部":  764
   },
-  
+  // SE1
   "1136": {
       "小号":  282,
       "中号":  584,
@@ -1326,7 +1328,29 @@ function phoneSizes() {
       "顶部":  59,
       "中间":  399,
       "底部":  399
-  }
+  },
+  // 11 and XR in Display Zoom mode
+  "1624": {
+      "小号":  310,
+      "中号":  658,
+      "大号":  690,
+      "左边":  46,
+      "右边":  394,
+      "顶部":  142,
+      "中间":  522,
+      "底部":  902
+    },
+   // Plus in Display Zoom mode
+   "2001" : {
+      "小号":  444,
+      "中号":  963,
+      "大号":  972,
+      "左边":  81,
+      "右边":  600,
+      "顶部":  90,
+      "中间":  618,
+      "底部":  1146
+    },
   }
   return phones
 }
