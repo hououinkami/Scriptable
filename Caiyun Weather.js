@@ -21,8 +21,10 @@ const widgetPreview = "medium"
 const imageBackground = true
 // 重置背景图片
 const forceImageUpdate = false
-// 各项目间的间隔（若有），默认10
-const padding = 10
+// 各项目间的间隔（若有），默认5
+const padding = 5
+// 图标是否跟随附近文字的颜色
+const tintIcons = true
 // 是否使用iCloud存储缓存
 const useiCloud = true
 // 缓存文件存储位置
@@ -511,8 +513,8 @@ async function setupGradient() {
   if (closeTo(sunrise)<=15) { return gradient.sunrise }
   if (closeTo(sunset)<=15) { return gradient.sunset }
   // 若距离大于30分钟, 使用傍晚或黎明的数据
-  if (closeTo(sunrise)<=45 && utcTime < sunrise) { return gradient.dawn }
-  if (closeTo(sunset)<=45 && utcTime > sunset) { return gradient.twilight }
+  if (closeTo(sunrise)<=45 && currentDate.getTime() < sunrise) { return gradient.dawn }
+  if (closeTo(sunset)<=45 && currentDate.getTime() > sunset) { return gradient.twilight }
   // 否则使用夜晚的数据
   if (isNight(currentDate)) { return gradient.night }
   // 正午
@@ -538,13 +540,13 @@ async function setupLocation() {
       // 区
       locationData.subLocality = geo.subLocality
       // 街道
-      locationData.street = geo.thoroughfare
+      locationData.street = (geo.thoroughfare == "null") ? "" : geo.thoroughfare
       // 详细地址
       locationData.address = locationData.locality + " " + locationData.subLocality + " " + locationData.street
       files.writeString(locationPath, location.latitude + "|" + location.longitude + "|" + locationData.address)
     } catch(e) {
       // 若自动定位失败，则从缓存获取定位信息
-      if (!autoLocation) { readLocationFromFile = true }
+      if (autoLocation) { readLocationFromFile = true }
       // 如果第一次在非自动定位模式下运行失败，将无法恢复
       else { return }
     }
@@ -624,30 +626,30 @@ async function setupWeather() {
 async function setupSunrise() {
   // 调用定位函数
   if (autoLocation) { await setupLocation() }
+  async function getSunData() {
+    const req = "https://api.caiyunapp.com/v2.5/" + apiKey + "/" + locationData.longitude + "," + locationData.latitude +"/weather.json?lang=" + lang + "&unit=" + weatherSettings.units + "&dailystart=0&hourlysteps=384&dailysteps=16"
+    const data = await new Request(req).loadJSON()
+    return data
+  }
   // 设置缓存
   const sunCachePath = files.joinPath(files.documentsDirectory() + folder, "caiyun_sun")
   const sunCacheExists = files.fileExists(sunCachePath)
   const sunCacheDate = sunCacheExists ? files.modificationDate(sunCachePath) : 0
-  let sunDataRaw, afterSunset
+  let sunDataRaw
   // 如果存在当日建立的缓存，则调用
   if (sunCacheExists && sameDay(currentDate, sunCacheDate)) {
     const sunCache = files.readString(sunCachePath)
     sunDataRaw = JSON.parse(sunCache)
-    // 判断是否已经日落
-    const sunsetDate = new Date(sunDataRaw.sunset)
-    afterSunset = currentDate.getTime() - sunsetDate.getTime() > (45 * 60 * 1000)
   }
-  // 若无数据或是要获取明日数据，则发送请求获取数据
-  if (!sunDataRaw || afterSunset) {
-    let tomorrowDate = new Date()
-    tomorrowDate.setDate(currentDate.getDate() + 1)
-    const dateToUse = afterSunset ? tomorrowDate : currentDate
-    const sunReq = "https://api.caiyunapp.com/v2.5/" + apiKey + "/" + locationData.longitude + "," + locationData.latitude +"/weather.json?lang=" + lang + "&unit=" + weatherSettings.units + "&dailystart=0&hourlysteps=384&dailysteps=16"
-    sunDataRaw = await new Request(sunReq).loadJSON()
+  // 否则发送请求获取数据
+  else {
+    sunDataRaw = await getSunData()
+    // 缓存文件
     files.writeString(sunCachePath, JSON.stringify(sunDataRaw))
   }
   // 存储数据
   sunData = {}
+
   var nowDate = new Date()
   year = nowDate.getFullYear()
   month = nowDate.getMonth() + 1
@@ -656,6 +658,7 @@ async function setupSunrise() {
   if (date < 10) date = "0" + date
   sunData.sunrise = new Date(year + "-" + month + "-" + date + "T" + weather.daily.astro[0].sunrise.time + ":00+00:00").getTime()
   sunData.sunset = new Date(year + "-" + month + "-" + date + "T" + weather.daily.astro[0].sunset.time + ":00+00:00").getTime()
+  sunData.tomorrow = new Date(year + "-" + month + "-" + date + "T" + weather.daily.astro[1].sunrise.time + ":00+00:00").getTime()
 }
 
 /*
@@ -715,7 +718,6 @@ async function current(column) {
   // 温度+高低温
   const tempStack = realtimeStack.addStack()
   tempStack.layoutVertically()
-//   tempStack.centerAlignContent()
   tempStack.setPadding(0, 0, 0, 0)
   // 实时温度
   const currentTempStack = tempStack.addStack()
@@ -759,7 +761,7 @@ async function current(column) {
   mainIconStack.setPadding(0, padding, 0, 0)
   let mainIcon = mainIconStack.addImage(SFSymbol.named((mapSkycon(weather.realtime.skycon)[1])).image)
   mainIcon.imageSize = new Size(iconSize.large,iconSize.large)
-  
+  tintIcon(mainIcon, textFormat.currentTemp)
   mainConditionStack.addSpacer()
   
   // 概况
@@ -794,13 +796,14 @@ async function future(column) {
   let subCondition = subConditionStack.addImage(showNextHour ? SFSymbol.named(weatherData.nextHourSkycon).image : SFSymbol.named(weatherData.tomorrowSkycon).image)
   const subConditionSize = showNextHour ? iconSize.small : iconSize.small
   subCondition.imageSize = new Size(subConditionSize, subConditionSize)
+  tintIcon(subCondition, textFormat.smallTemp)
   subConditionStack.addSpacer(5)
   //  根据判断显示对应内容
   if (showNextHour) {
     const subTempText = Math.round(weatherData.nextHourTemp) + "°"
     const subTemp = provideText(subTempText, subConditionStack, textFormat.smallTemp)
   } else {
-    let tomorrowLine = subConditionStack.addImage(drawVerticalLine(new Color("ffffff", 0.5), 20))
+    let tomorrowLine = subConditionStack.addImage(drawVerticalLine(new Color(textFormat.tinyTemp.color || textFormat.defaultText.color, 0.5), 20))
     tomorrowLine.imageSize = new Size(3,28)
     subConditionStack.addSpacer(5)
     let tomorrowStack = subConditionStack.addStack()
@@ -863,7 +866,7 @@ async function keyPoint(column) {
   if (!weatherData) { await setupWeather() }
   let keyPointStack = column.addStack()
   keyPointStack.layoutHorizontally()
-  keyPointStack.setPadding(0, padding, 0, padding)
+  keyPointStack.setPadding(0, padding, 0, 0)
   keyPointStack.url = ""
   if (weatherSettings.showKeypoint) {
     provideText(weatherData.keypoint, keyPointStack, textFormat.keypoint)
@@ -1047,6 +1050,12 @@ function mapSkycon(skycon) {
   return map[skycon];
 }
 
+// 图标颜色跟随附近文字
+function tintIcon(icon,format) {
+  if (!tintIcons) { return }
+  icon.tintColor = new Color(format.color || textFormat.defaultText.color)
+}
+
 // 判断是否为夜晚
 function isNight(dateInput) {
   const timeValue = dateInput.getTime()
@@ -1085,13 +1094,18 @@ function provideFont(fontName, fontSize) {
 
 // 为指定容器添加对应格式文本
 function provideText(string, container, format) {
-  const textItem = container.addText(string)
-  const textFont = format.font || textFormat.defaultText.font
-  const textSize = format.size || textFormat.defaultText.size
-  const textColor = format.color || textFormat.defaultText.color
-  textItem.font = provideFont(textFont, textSize)
-  textItem.textColor = new Color(textColor)
-  return textItem
+  if (typeof string !== "undefined") {
+    const textItem = container.addText(string)
+    const textFont = format.font || textFormat.defaultText.font
+    const textSize = format.size || textFormat.defaultText.size
+    const textColor = format.color || textFormat.defaultText.color
+    textItem.font = provideFont(textFont, textSize)
+    textItem.textColor = new Color(textColor)
+    return textItem
+  }
+  else {
+    return
+  }
 }
 
 /*
@@ -1137,13 +1151,15 @@ function drawTempBar() {
   const barHeight = tempBarHeight - 10
   barPath.addRoundedRect(new Rect(0, 5, tempBarWidth, barHeight), barHeight / 2, barHeight / 2)
   draw.addPath(barPath)
-  draw.setFillColor(new Color("ffffff", 0.5))
+  // Determine the color.
+  const barColor = textFormat.defaultText.color
+  draw.setFillColor(new Color(textFormat.tinyTemp.color || textFormat.defaultText.color, 0.5))
   draw.fillPath()
   // Make the path for the current temp indicator.
   let currPath = new Path()
   currPath.addEllipse(new Rect(currPosition, 0, tempBarHeight, tempBarHeight))
   draw.addPath(currPath)
-  draw.setFillColor(new Color("ffffff", 1))
+  draw.setFillColor(new Color(textFormat.tinyTemp.color || textFormat.defaultText.color, 1))
   draw.fillPath()
   return draw.getImage()
 }
