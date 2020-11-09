@@ -649,7 +649,7 @@ async function setupWeatherAlert() {
   }
   // 存储天气预警数据
   weatherAlert = alertDataRaw.result
-  alertTitleRaw = weatherAlert.alert.content[0].title
+  alertTitleRaw = (typeof weatherAlert.alert.content[0].title !== "undefined") ? weatherAlert.alert.content[0].title : ""
   if (alertTitleRaw.indexOf("布") !== -1) {
     var alertTitle = alertTitleRaw.slice(alertTitleRaw.indexOf("布") + 1, alertTitleRaw.length)
   } else {
