@@ -14,7 +14,7 @@ const apiKey = ""
 let lang = "zh_CN"
 if (lang == "" || lang == null) { lang = Device.locale() }
 // 是否使用动态定位
-const autoLocation = auto
+const autoLocation = true
 // 预览尺寸
 const widgetPreview = "medium"
 // 是否使用自定义背景图片，否则采用纯色背景
