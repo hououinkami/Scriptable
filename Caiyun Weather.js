@@ -14,7 +14,7 @@ const apiKey = ""
 let lang = "zh_CN"
 if (lang == "" || lang == null) { lang = Device.locale() }
 // 是否使用动态定位
-const autoLocation = true
+const autoLocation = auto
 // 预览尺寸
 const widgetPreview = "medium"
 // 是否使用自定义背景图片，否则采用纯色背景
@@ -45,6 +45,8 @@ const weatherSettings = {
   ,showHighLow: true
   // 是否显示更新时间
   ,showUpdatetime: true
+  // 是否显示天气预警
+  ,showAlert: true
   // 从几点开始显示明日气温（24则为用不显示）
   ,tomorrowShownAtHour: 22
 }
@@ -194,6 +196,10 @@ const items = [
 
      column,
      right,
+     currentAlert,
+
+     column,
+     right,
      severTime,
 
      
@@ -228,7 +234,7 @@ const items = [
 构建小组件
 */
 // 声明变量
-var locationData, sunData, weatherData
+var locationData, sunData, weatherData, alertData
 // 定义全局变量
 const currentDate = new Date()
 const widget = new ListWidget()
@@ -622,6 +628,38 @@ async function setupWeather() {
   weatherData.alert = weather.alert.content.title
 }
 
+// 获取天气预警信息
+async function setupWeatherAlert() {
+  // 调用定位
+  if (!locationData) { await setupLocation() }
+  // 设置缓存
+  const alertcachePath = files.joinPath(files.documentsDirectory() + folder, "caiyun_alert")
+  const alertcacheExists = files.fileExists(alertcachePath)
+  const alertcacheDate = alertcacheExists ? files.modificationDate(alertcachePath) : 0
+  var weatherDataRaw
+  // 如果有缓存且距离上次请求短于1min，则直接读取缓存数据
+  if (alertcacheExists && (currentDate.getTime() - alertcacheDate.getTime()) < 60000) {
+    const alertcache = files.readString(alertcachePath)
+    alertDataRaw = JSON.parse(alertcache)
+  // 否则发送请求获取天气数据
+  } else {
+    const alertReq = "https://api.caiyunapp.com/v2.5/" + apiKey + "/" + locationData.longitude + "," + locationData.latitude +"/weather.json?lang=" + "zh_CN" + "&unit=" + weatherSettings.units + "&dailystart=0&hourlysteps=384&dailysteps=16&alert=true"
+    alertDataRaw = await new Request(alertReq).loadJSON()
+    files.writeString(alertcachePath, JSON.stringify(alertDataRaw))
+  }
+  // 存储天气预警数据
+  weatherAlert = alertDataRaw.result
+  alertTitleRaw = weatherAlert.alert.content[0].title
+  if (alertTitleRaw.indexOf("布") !== -1) {
+    var alertTitle = alertTitleRaw.slice(alertTitleRaw.indexOf("布") + 1, alertTitleRaw.length)
+  } else {
+    var alertTitle = alertTitleRaw
+  }
+  alertData = {}
+  // 预警信息
+  alertData.alert = alertTitle
+}
+
 // 存储日出日落信息
 async function setupSunrise() {
   // 调用定位函数
@@ -700,6 +738,20 @@ async function severTime(column) {
     timeTextStack.setPadding(0, 0, 0, padding)
   }
 }
+// 天气预警信息
+async function currentAlert(column) {
+  if (!alertData) { await setupWeatherAlert() }
+  let currentAlertStack = column.addStack()
+  currentAlertStack.layoutVertically()
+  currentAlertStack.setPadding(padding, padding, 0, 0)
+  currentAlertStack.url = ""
+  // 判断是否显示预警
+  if (weatherSettings.showAlert) {
+    let AlertTextStack = align(currentAlertStack)
+    let AlertText = provideText(alertData.alert, AlertTextStack, textFormat.location)
+    AlertTextStack.setPadding(0, 0, 0, 0)
+  }
+}
 // 当前天气
 async function current(column) {
   if (!weatherData) { await setupWeather() }
@@ -762,10 +814,10 @@ async function current(column) {
   let mainIcon = mainIconStack.addImage(SFSymbol.named((mapSkycon(weather.realtime.skycon)[1])).image)
   mainIcon.imageSize = new Size(iconSize.large,iconSize.large)
   tintIcon(mainIcon, textFormat.currentTemp)
-  mainConditionStack.addSpacer()
   
   // 概况
   if (weatherSettings.showCondition) {
+   mainConditionStack.addSpacer()
    let mainTextStack = mainConditionStack.addStack()
    let mainText = provideText(mapSkycon(weather.realtime.skycon)[0], mainTextStack, textFormat.keyword)
    mainTextStack.setPadding(0, padding, 0, 0)
